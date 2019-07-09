@@ -60,6 +60,12 @@ body,select,input,textarea
   color:#333;
 }
 
+input#searchinput {
+  width:175px;
+  border-bottom:5px;
+  margin-bottom:5px;
+}
+
 label, input[type="button"], input[type="submit"], input[type="image"], button {
   cursor: pointer;
 }
@@ -219,13 +225,8 @@ a:link
   -webkit-tap-highlight-color:#FF5E99;
 }
 
-a.logo_link
-{
-  display:block;
-  width:185px;
-  height:82px;
-  background:url(/resources/site-logo.png) no-repeat 0 0;
-  text-indent:-500px;
+img#site-logo {
+        width: 180px;
 }
 
 #navigation

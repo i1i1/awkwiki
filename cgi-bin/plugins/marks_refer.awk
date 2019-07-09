@@ -19,7 +19,7 @@ BEGIN {
 
 	fmt_url = " — %U"
 
-	syntax["```ref"] = "ref_fmt"
+	syntaxlang["ref"] = "ref_fmt"
 }
 
 function fmt_string(a, s,	nsubs, tmp) {

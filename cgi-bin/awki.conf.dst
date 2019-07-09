@@ -32,6 +32,10 @@ css="/resources/common.css"
 ## HTTP URL for external icon file
 icon="/resources/icon.png"
 
+## site-logo:
+## HTTP URL for external logo file
+site-logo="/resources/site-logo.png"
+
 ## rcs:
 ## If true, RCS is used for revisioning.
 ## This will enable PageHistory!
@@ -84,7 +88,7 @@ max_post=2000000
 sessions="./sessions/"
 
 ## default language, set locale and dictionary
-lang="ru"
+lang="en"
 
 ## login command
 login_cmd="./login.sh"

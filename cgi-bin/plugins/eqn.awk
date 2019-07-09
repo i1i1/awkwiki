@@ -1,5 +1,5 @@
 BEGIN {
-	syntax["%EQ"] = "eqn_fmt"
+	syntaxlang["eq"] = "eqn_fmt"
 	line_syntax["\\$\\$[^\\$]+\\$\\$"] = "eqn_fmt_inline"
 }
 
@@ -29,7 +29,7 @@ function eqn_fmt()
 	if (getline <= 0)
 		exit(1)
 
-	while ($0 !~ /^%EN$/) {
+	while ($0 !~ /^```/) {
 		tmp = tmp "\n" $0
 		if (getline <= 0)
 			exit(1)

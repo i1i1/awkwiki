@@ -25,18 +25,21 @@ BEGIN {
 	ctx["blankln"] = 0
 
 #	syntax["regexp"] = "handler"
-	syntax["$"] = "wiki_blank"
-	syntax["\\[/categories\\]: "] = "wiki_reference_category"
-	syntax["\\[/listcategories\\]: "] = "wiki_format_category"
-	syntax["```"] = "wiki_highlight_block"
-	syntax["#[^#]"] = "wiki_print_pagename"
-	syntax["##+"] = "wiki_print_heading"
-	syntax["[\t ]*[1*+-]"] = "wiki_print_list"
-#	syntax["\t[^:]+[ \t]+:[ \t]+.*$"] = "wiki_format_term"
+	syntax["[[:blank:]]*$"] = "wiki_blank"
+	syntax["[[:blank:]]*\\[/listcategories\\]: "] = "wiki_reference_category"
+	syntax["[[:blank:]]*\\[/categories\\]:"] = "wiki_format_category"
+	syntax["```[[:blank:]]*$"] = "wiki_unformatted_block"
+	syntax["```[[:blank:]]*[[:alnum:]]"] = "wiki_highlight_code"
+	syntax["[[:blank:]]*#[^#]"] = "wiki_print_pagename"
+	syntax["[[:blank:]]*##+"] = "wiki_print_heading"
+	syntax["[[:blank:]]*[*+0-9-]"] = "wiki_print_list"
+	syntax["[[:blank:]]*\\*\\*\\*"] = "wiki_print_hr"
+	syntax["[[:blank:]]*---"] = "wiki_print_hr"
+	syntax["[[:blank:]]*___"] = "wiki_print_hr"
 
 #	line_syntax["regexp"] = "handler"
-	str = "!?\\[[^\\[\\]]+\\]\\([\\(\\)]\\)"
-	line_syntax[str] = "wiki_format_url"
+	str = "!?\\[[^\\[\\]]+\\]\\([^()]+\\)"
+	line_syntax[str] = "wiki_format_url"  # TBD
 
 	print "<p>"
 }
@@ -82,7 +85,7 @@ function wiki_blank()
 
 function wiki_reference_category(	cmd, list)
 {
-	cmd = "grep -wl '^#.*" pagename "' " datadir "*"
+	cmd = "grep -wl '^[ \t]*\\[/categories\\]:.*" pagename "' " datadir "*"
 
 	while (cmd | getline > 0) {
 		if (!list) { list = 1; print "<p><ul>" }
@@ -101,7 +104,7 @@ function wiki_format_category(	tmp)
 {
 	print "<br><hr>"
 
-	sub(/^#/, "")
+	sub(/^[[:blank:]]*\\[/categories\\]:/, "")
 	split($0, sa, "|")
 
 	tmp = ""
@@ -118,29 +121,29 @@ function wiki_format_category(	tmp)
 	print
 }
 
-function wiki_highlight_block()
-{
-	if (match($0, /{[-A-Za-z0-9_]+}/))
-		wiki_highlight_code()
-	else
-		wiki_unformatted_block()
-}
-
 # For code highlighting in
-# ==={langname}
-# ===
+# ``` langname
+# ```
 function wiki_highlight_code(		ex)
 {
-	langname = substr($0, RSTART + 1, RLENGTH - 2)
-	langname = tolower(langname)
+	sub(/^```/, "");
+	sub(/^ */, "");
+	sub(/ *$/, "");
+	langname = tolower($0)
 
 	ex = 0
 	tmp = ""
 
+	if (langname in syntaxlang) {
+		cmd = syntaxlang[langname]
+		@cmd()
+		return
+	}
+
 	if (getline <= 0)
 		ex = 1
 
-	while ($0 !~ /^===$/ && !ex) {
+	while ($0 !~ /^```/ && !ex) {
 		tmp = tmp "\n" $0
 		if (getline <= 0)
 			ex = 1
@@ -162,8 +165,8 @@ function wiki_highlight_code(		ex)
 }
 
 # For unformated data in:
-# ===
-# ===
+# ```
+# ```
 function wiki_unformatted_block()
 {
 	if (getline <= 0)
@@ -172,7 +175,7 @@ function wiki_unformatted_block()
 	print "\n<div class=\"mw-highlight\">"
 	print "<pre>"
 
-	while ($0 !~ /^===$/) {
+	while ($0 !~ /^```/) {
 		print html_ent_format($0)
 		if (getline <= 0) {
 			print "</pre>"
@@ -189,7 +192,9 @@ function wiki_unformatted_block()
 # for example author name, or something
 function wiki_print_pagename(	arr, s)
 {
-	sub(/^= /, "")
+	sub(/^#/, "")
+	sub(/^ */, "")
+	sub(/ *$/, "")
 
 	# parse out magic words from pagename
 	while (match($0, /__[a-zA-Z0-9]+__/, arr)) {
@@ -227,18 +232,13 @@ function wiki_print_mono()
 # For headings and horizontal line
 function wiki_print_heading(	n, link)
 {
-	while (/^-/) {
-		sub(/^-/, "")
+	while (/^#/) {
+		sub(/^#/, "")
 		n++
 	}
 
-	if (n >= 4) {
-		ctx["blankln"] = 0
-		print "<hr>"
-		return
-	}
-
-	n++
+	if (n > 6)
+		n = 6
 
 	if (ctx["print_toc"]) {
 		wiki_print_content()
@@ -252,17 +252,22 @@ function wiki_print_heading(	n, link)
 	print "<h"n" class=\"header\" id=\"" link "\">" wiki_format_line($0) "</h"n">"
 }
 
+function wiki_print_hr()
+{
+	print "<hr>"
+}
+
 function wiki_print_list(	n, i, tabcount, list, tag)
 {
 	do {
-		if (/^\t+[*]/)
+		if (/^\t+[*+-]/)
 			tag = "ul"
 		else
 			tag = "ol"
 
 		tabcount = 0
 
-		while (/^\t+[1*]/) {
+		while (/^\t/) {
 			sub(/^\t/,"")
 			tabcount++
 		}
@@ -289,7 +294,7 @@ function wiki_print_list(	n, i, tabcount, list, tag)
 		if (list[tabcount, "type"] == "")
 			print "<" tag ">"
 
-		sub(/^[1*]/, "")
+		sub(/^[0-9*+-]+/, "")
 		print "\t<li>" wiki_format_line($0) "</li>"
 
 		list["maxlvl"] = tabcount
@@ -307,7 +312,7 @@ function wiki_print_list(	n, i, tabcount, list, tag)
 			exit(1)
 		}
 
-	} while (/^\t+[1*]/)
+	} while (/^\t+[0-9*+-]/)
 
 	for (i = list["maxlvl"]; i > 0; i--) {
 		#skip unused levels
@@ -317,37 +322,6 @@ function wiki_print_list(	n, i, tabcount, list, tag)
 		print "</" list[i, "type"] ">"
 		list[i, "type"] = ""
 	}
-	wiki_format_marks()
-}
-
-# For Terms:
-# <Tab>Term : defenition
-# Requires to be in "<dl></dl>"
-function wiki_format_term(	term, def)
-{
-	print "<dl>"
-
-	do {
-		sub(/^\t/, "", $0)
-		term = $0
-		sub(/[ \t]+:.*$/, "", term)
-
-		def = $0
-		sub(/[^:]+:[ \t]+/, "", def)
-
-		term = wiki_format_line(term)
-		def = wiki_format_line(def)
-
-		print "\
-		      <dt>" term "</dt>\n\
-		      <dd>" def "</dd>"
-		if (getline <= 0) {
-			print "</dl>"
-			exit(1)
-		}
-	} while (/\t[^:]+[ \t]+:[ \t]+.*$/)
-
-	print "</dl>"
 	wiki_format_marks()
 }
 
@@ -524,48 +498,48 @@ function html_ent_format(fmt,	sa, tmp)
 	return fmt
 }
 
-function wiki_format_url(fmt,	i, pref, ref, suf, n, name, link, ret, atag)
+function wiki_format_url(fmt,	img, i, pref, ref, suf, n, name, link, ret, atag)
 {
-	if (match(fmt, /^\[\[[^\[\]]+\]\]$/)) {
-		#strip square brackets
-		ref = substr(fmt, 3, RLENGTH - 4)
-
-		n = split(ref, a, "|")
-
-		name = link = a[1]
-		gsub(" ", "", link)
-
-		if (n > 1)
-			name = a[2]
-
-		if (link ~ "^" pagename_re "$") {
-			if (pages[link])
-				return "<a href=\""scriptname"/"link"\">"name"</a>"
-			else
-				return name"<a href=\""scriptname"/"link"\">?</a>"
-		}
-
-		if (link !~ /^((https?|ftp|gopher|file):\/\/|(mailto|news):)/)
-			link = "http://" link
-
-		if (n > 2)
-			img_options["width"] = a[3]
-
-		ret = shape_link_image(link)
-
-		delete img_options
-
-		#Its image!
-		if (ret != "") {
-			fmt = pref ret
-		} else {
-		#other case
-			atag = gen_href(link, name)
-			fmt = pref atag
-		}
+	if (fmt ~ /^!/) {
+		img = 1
+		sub(/^!/, "", fmt)
 	}
 
-	return fmt
+	sub(/^!/, "", fmt)
+	name = gensub("^\\[([^\\[\\]]+)\\]\\(([^()]+)\\)", "\\1", "1", fmt)
+	link = gensub("^\\[([^\\[\\]]+)\\]\\(([^()]+)\\)", "\\2", "1", fmt)
+
+	if (link ~ "^" pagename_re "$") {
+		if (pages[link])
+			return "<a href=\""scriptname"/"link"\">"name"</a>"
+		else
+			return name"<a href=\""scriptname"/"link"\">?</a>"
+	}
+
+	if (link !~ /^((https?|ftp|gopher|file):\/\/|(mailto|news):)/)
+		link = "http://" link
+
+	if (!img)
+		return gen_href(link, name)
+
+	if (link ~ /^([^ ]+ +)=([0-9]*)x([0-9]*)/) {
+		width  = gensub(/^([^ ]+ +)=([0-9]*)x([0-9]*)/, "\\2", "1", link)
+		height = gensub(/^([^ ]+ +)=([0-9]*)x([0-9]*)/, "\\3", "1", link)
+		if (width)
+			img_options["width"] = width
+		if (height)
+			img_options["height"] = height
+		sub("=.*$", "", link)
+	}
+
+	ret = shape_link_image(link)
+
+	delete img_options
+
+	if (ret != "")
+		return ret
+	else
+		return gen_href(link, name)
 }
 
 function shape_link_image(link,		options)
