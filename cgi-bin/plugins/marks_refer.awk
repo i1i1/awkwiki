@@ -19,7 +19,7 @@ BEGIN {
 
 	fmt_url = " — %U"
 
-	syntax["%R"] = "ref_fmt"
+	syntax["```ref"] = "ref_fmt"
 }
 
 function fmt_string(a, s,	nsubs, tmp) {
@@ -176,7 +176,7 @@ function ref_fmt() {
 	print "<ol>"
 
 	while(getline > 0) {
-		if (/^%R\)/) {
+		if (/^```\)/) {
 			print_ref(refentry)
 			print "</ol>"
 			next
