@@ -10,7 +10,7 @@
 BEGIN {
 	pagename_re = "[[:upper:]][[:lower:]]+[[:upper:]][[:alpha:]]*"
 	list["maxlvl"] = 0
-	scriptname = ENVIRON["SCRIPT_NAME"]
+	scriptname = (rewrite == "true" ? "" : ENVIRON["SCRIPT_NAME"])
 
 	cmd = "ls " datadir
 	while (cmd | getline ls_out > 0)
@@ -25,21 +25,22 @@ BEGIN {
 	ctx["blankln"] = 0
 
 #	syntax["regexp"] = "handler"
-	syntax["[[:blank:]]*$"] = "wiki_blank"
-	syntax["[[:blank:]]*\\[/listcategories\\]: "] = "wiki_reference_category"
-	syntax["[[:blank:]]*\\[/categories\\]:"] = "wiki_format_category"
+	syntax["$"] = "wiki_blank"
+	syntax["\\[/listcategories\\]: "] = "wiki_reference_category"
+	syntax["\\[/categories\\]:"] = "wiki_format_category"
+	syntax["((    )|\t)[^*+0-9-]"] = "wiki_unformatted_block_indented"
 	syntax["```[[:blank:]]*$"] = "wiki_unformatted_block"
 	syntax["```[[:blank:]]*[[:alnum:]]"] = "wiki_highlight_code"
-	syntax["[[:blank:]]*#[^#]"] = "wiki_print_pagename"
-	syntax["[[:blank:]]*##+"] = "wiki_print_heading"
-	syntax["[[:blank:]]*[*+0-9-]"] = "wiki_print_list"
-	syntax["[[:blank:]]*\\*\\*\\*"] = "wiki_print_hr"
-	syntax["[[:blank:]]*---"] = "wiki_print_hr"
-	syntax["[[:blank:]]*___"] = "wiki_print_hr"
+	syntax["#[^#]"] = "wiki_print_pagename"
+	syntax["##+"] = "wiki_print_heading"
+	syntax["[*+0-9-]([^-*]|$)"] = "wiki_print_list"
+	syntax["\\*\\*\\*"] = "wiki_print_hr"
+	syntax["---"] = "wiki_print_hr"
+	syntax["___"] = "wiki_print_hr"
 
 #	line_syntax["regexp"] = "handler"
 	str = "!?\\[[^\\[\\]]+\\]\\([^()]+\\)"
-	line_syntax[str] = "wiki_format_url"  # TBD
+	line_syntax[str] = "wiki_format_url"
 
 	print "<p>"
 }
@@ -66,7 +67,8 @@ function wiki_format_marks()
 			continue
 
 		str = syntax[i]
-		@str()
+		if (@str() == 1)
+			continue
 		next
 	}
 
@@ -90,7 +92,7 @@ function wiki_reference_category(	cmd, list)
 	while (cmd | getline > 0) {
 		if (!list) { list = 1; print "<p><ul>" }
 		sub(/^.*[^\/]\//, "")
-		sub(pagename_re, "<li><a href=\""scriptname"/&\">&</a></li>")
+		sub(pagename_re, "<li><a href=\""(rewrite == "true" ? "" : scriptname)"/&\">&</a></li>")
 		print
 	}
 
@@ -104,7 +106,7 @@ function wiki_format_category(	tmp)
 {
 	print "<br><hr>"
 
-	sub(/^[[:blank:]]*\\[/categories\\]:/, "")
+	sub(/^\\[/categories\\]:/, "")
 	split($0, sa, "|")
 
 	tmp = ""
@@ -162,6 +164,26 @@ function wiki_highlight_code(		ex)
 
 	if (ex)
 		exit(1)
+}
+
+# For unformated data which is 4 spaces or tab indented
+function wiki_unformatted_block_indented()
+{
+	print "\n<div class=\"mw-highlight\">"
+	print "<pre>"
+
+	while (/^((    )|\t)/) {
+		sub(/^((    )|\t)/, "")
+		print html_ent_format($0)
+		if (getline <= 0) {
+			print "</pre>"
+			print "</div>"
+			exit(1)
+		}
+	}
+
+	print "</pre>"
+	print "</div>"
 }
 
 # For unformated data in:
@@ -257,17 +279,28 @@ function wiki_print_hr()
 	print "<hr>"
 }
 
-function wiki_print_list(	n, i, tabcount, list, tag)
+function wiki_print_list(	n, i, tabcount, list, tag, s)
 {
+	if (/^\t*\*/) {
+		s = $0
+		while (s ~ /\*/) {
+			n++
+			sub(/\*/, "", s)
+		}
+		# if not supposed to go here then return error
+		if (n % 2 == 0)
+			return 1
+	}
+
 	do {
-		if (/^\t+[*+-]/)
+		if (/^\t*[*+-]/)
 			tag = "ul"
 		else
 			tag = "ol"
 
-		tabcount = 0
+		tabcount = 1
 
-		while (/^\t/) {
+		while (/^\t+[*+0-9-]/) {
 			sub(/^\t/,"")
 			tabcount++
 		}
@@ -290,11 +323,10 @@ function wiki_print_list(	n, i, tabcount, list, tag)
 			list[tabcount, "type"] = ""
 		}
 
-
 		if (list[tabcount, "type"] == "")
 			print "<" tag ">"
 
-		sub(/^[0-9*+-]+/, "")
+		sub(/^[*+0-9-]+\.?/, "")
 		print "\t<li>" wiki_format_line($0) "</li>"
 
 		list["maxlvl"] = tabcount
@@ -312,7 +344,7 @@ function wiki_print_list(	n, i, tabcount, list, tag)
 			exit(1)
 		}
 
-	} while (/^\t+[0-9*+-]/)
+	} while (/^\t*[*+0-9-]/)
 
 	for (i = list["maxlvl"]; i > 0; i--) {
 		#skip unused levels
@@ -354,16 +386,17 @@ function wiki_format_line(fmt,		i, j, pref, suf, strong, em, code, wikilink, fun
 			fmt = pref suf
 			continue
 		}
-		if (suf ~ /^'''/) {
-			sub(/^'''/, "", suf)
+		if (suf ~ /^\*\*/ || suf ~ /^__/) {
+			sub(/^\*\*/, "", suf)
+			sub(/^__/, "", suf)
 			tag = (strong ? "</strong>" : "<strong>")
 			strong = !strong
-		} else if (suf ~ /^''/) {
-			sub(/^''/, "", suf)
+		} else if (suf ~ /^[*_]/) {
+			sub(/^[*_]/, "", suf)
 			tag = (em ? "</em>" : "<em>")
 			em = !em
-		} else if (suf ~ /^``/) {
-			sub(/^``/, "", suf)
+		} else if (suf ~ /^`/) {
+			sub(/^`/, "", suf)
 			tag = (code ? "</code>" : "<code>")
 			code = !code
 		}
@@ -463,9 +496,9 @@ function wiki_format_line(fmt,		i, j, pref, suf, strong, em, code, wikilink, fun
 function page_ref_format(link)
 {
 	if (pages[link])
-		return "<a href=\""scriptname"/"link"\">"link"</a>"
+		return "<a href=\""(rewrite == "true" ? "" : scriptname)"/"link"\">"link"</a>"
 	else
-		return link"<a href=\""scriptname"/"link"\">?</a>"
+		return link"<a href=\""(rewrite == "true" ? "" : scriptname)"/"link"\">?</a>"
 }
 
 # HTML entities for <, > and &
@@ -511,9 +544,9 @@ function wiki_format_url(fmt,	img, i, pref, ref, suf, n, name, link, ret, atag)
 
 	if (link ~ "^" pagename_re "$") {
 		if (pages[link])
-			return "<a href=\""scriptname"/"link"\">"name"</a>"
+			return "<a href=\""(rewrite == "true" ? "" : scriptname)"/"link"\">"name"</a>"
 		else
-			return name"<a href=\""scriptname"/"link"\">?</a>"
+			return name"<a href=\""(rewrite == "true" ? "" : scriptname)"/"link"\">?</a>"
 	}
 
 	if (link !~ /^((https?|ftp|gopher|file):\/\/|(mailto|news):)/)

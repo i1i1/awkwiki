@@ -55,9 +55,13 @@ BEGIN {
 	#load external configfile
 	load_config(scriptname)
 
+	if (localconf["rewrite"] == "true")
+		scriptname = ""
+
 	load_dict(dictionary, localconf["lang"])
 
 	localconf["default_page"] = _("FrontPage")
+	localconf["special_parser"] = localconf["special_parser"] " -v rewrite=\""localconf["rewrite"]"\" "
 
 	# PATH_INFO contains page name
 	if (ENVIRON["PATH_INFO"])
@@ -269,7 +273,7 @@ function header(page,	i, action, label)
 
 	print "\
           <li class=\"wikilink\"><a href=\""scriptname"/" _("RecentChanges") "\">" _("RecentChanges") "</a></li>\n\
-        <li class=\"wikilink\"><a href=\"" scriptname "/" _("PageList") "\">" _("PageList") "</a>\n\
+        <li class=\"wikilink\"><a href=\""scriptname"/" _("PageList") "\">" _("PageList") "</a>\n\
         </ul>\n\
       </div>\n\
     </div>\n\
@@ -317,7 +321,7 @@ function footer(page,	cmd, year)
 # send page to parser script
 function parse(name, filename, revision,	parser_cmd)
 {
-	parser_cmd = localconf["parser"] " -v datadir='" localconf["datadir"] "' -v pagename='" name "' -v contents='" _("Contents") "'"
+	parser_cmd = localconf["parser"] " -v rewrite=\""localconf["rewrite"]"\" -v datadir='" localconf["datadir"] "' -v pagename='" name "' -v contents='" _("Contents") "'"
 	if (system("[ -f "filename" ]") == 0 ) {
 		if (revision) {
 			print "<em>" _("Displaying old version") " ("revision") " _("of") " <a href=\""scriptname"/" name "\">"name"</a>.</em>"

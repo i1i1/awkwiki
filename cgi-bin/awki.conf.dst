@@ -93,6 +93,9 @@ lang="en"
 ## login command
 login_cmd="./login.sh"
 
-#passwd path
+## passwd path
 passwd_path="./awkpasswd"
+
+## url rewrite
+rewrite="true"
 

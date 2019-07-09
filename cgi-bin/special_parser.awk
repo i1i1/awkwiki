@@ -11,7 +11,7 @@ BEGIN {
 	pagename_re = "[[:upper:]][[:lower:]]+[[:upper:]][[:alpha:]]*"
 	pagename_all_re = "^" pagename_re "$"
 	pagename_end_re = pagename_re "$"
-	scriptname = ENVIRON["SCRIPT_NAME"]
+	scriptname = (rewrite == "true" ? "" : ENVIRON["SCRIPT_NAME"])
 	if (special_changes)
 		print "<table>"
 	if (special_history) {
