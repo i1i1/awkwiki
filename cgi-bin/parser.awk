@@ -26,7 +26,7 @@ BEGIN {
 
 #	syntax["regexp"] = "handler"
 	syntax["$"] = "wiki_blank"
-	syntax["\\[/listcategories\\]: "] = "wiki_reference_category"
+	syntax["\\[/listcategories\\]:"] = "wiki_reference_category"
 	syntax["\\[/categories\\]:"] = "wiki_format_category"
 	syntax["((    )|\t)[^*+0-9-]"] = "wiki_unformatted_block_indented"
 	syntax["```[[:blank:]]*$"] = "wiki_unformatted_block"
@@ -106,7 +106,7 @@ function wiki_format_category(	tmp)
 {
 	print "<br><hr>"
 
-	sub(/^\\[/categories\\]:/, "")
+	sub("^\\[/categories\\]:", "")
 	split($0, sa, "|")
 
 	tmp = ""
