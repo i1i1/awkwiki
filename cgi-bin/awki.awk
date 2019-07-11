@@ -396,7 +396,7 @@ function check_login(username, password,	cmd, id)
 	if (!match(username, /^[a-zA-Z0-9_-]+$/) || !match(password, /^[^'":]+$/))
 		return _("Wrong characters at username or password")
 
-	if (system(localconf["login_cmd"] " " username " " password))
+	if (system(localconf["login_cmd"] " \"" username "\" \"" password)"\"")
 		return _("Username or password is wrong") "."
 
 	cmd = "basename $(mktemp " localconf["sessions"] "XXXXXXXXXXXXX)"
@@ -472,7 +472,7 @@ function check_register(username, password, password0,	cmd, id, hash)
 	if (!match(username, /^[a-zA-Z0-9_-]+$/) || !match(password, /^[^'":]+$/))
 		return _("Wrong characters at username or password")
 
-	if (system("grep '" username "' " localconf["passwd_path"]) == 0)
+	if (system("grep '^" username ":' " localconf["passwd_path"]) == 0)
 		return _("This user already exists") "."
 
 	if (password != password0)
