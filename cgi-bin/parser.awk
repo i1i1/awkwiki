@@ -449,20 +449,21 @@ function wiki_format_line(fmt,		i, j, pref, suf, strong, em, code, wikilink, fun
 			fmt = pref suf
 			continue
 		}
-		if (match(suf, "^" pagename_re)) {
-			if (wikilink) {
-				link = substr(suf, 1, RLENGTH)
-				sub("^" pagename_re, "", suf)
-
-				link = page_ref_format(link)
-
-				i += length(link)
-				fmt = pref link suf
-			} else
-				i += RLENGTH
-
-			continue
-		}
+		# Commented out for now
+#		if (match(suf, "^" pagename_re)) {
+#			if (wikilink) {
+#				link = substr(suf, 1, RLENGTH)
+#				sub("^" pagename_re, "", suf)
+#
+#				link = page_ref_format(link)
+#
+#				i += length(link)
+#				fmt = pref link suf
+#			} else
+#				i += RLENGTH
+#
+#			continue
+#		}
 
 		for (j in line_syntax) {
 			if (!match(suf, "^" j))
