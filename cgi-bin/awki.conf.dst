@@ -32,9 +32,9 @@ css="/resources/common.css"
 ## HTTP URL for external icon file
 icon="/resources/icon.png"
 
-## site-logo:
+## site_logo:
 ## HTTP URL for external logo file
-site-logo="/resources/site-logo.png"
+site_logo="/resources/site_logo.png"
 
 ## rcs:
 ## If true, RCS is used for revisioning.

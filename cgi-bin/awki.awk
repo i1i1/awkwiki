@@ -256,7 +256,7 @@ function header(page,	i, action, label)
   <div id=\"header_inner\">\n\
     <div id=\"logo\" class=\"repeat\">\n\
       <a class=\"logo_link\" href=\""scriptname"/"localconf["default_page"]"\" title=\"" localconf["wiki_name"] " Wiki\">\n\
-        <img id=\"site-logo\" src=\""localconf["site-logo"]"\">\n\
+        <img id=\"site_logo\" src=\""localconf["site_logo"]"\">\n\
       </a>\n\
     </div>\n\
     <div id=\"navigation\" class=\"repeat\">\n\
