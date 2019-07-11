@@ -8,13 +8,14 @@ for file in $dst_files ; do
 	cp $file $dst_name
 done
 
-if awk -F= '/^ID_LIKE=/ {exit($2 == "debian" ? 0 : 1)}'; then
+if awk -F= '/^ID_LIKE=/ {exit($2 == "debian" ? 0 : 1)}' /etc/os-release; then
 	echo "[+] Installing dependencies"
-	sudo apt-get install gawk groff ps2eps pdf2svg python3-pygments
+	sudo apt-get install gawk groff ps2eps pdf2svg python3-pygments unzip
 	cd /tmp
 	wget http://mirrors.ctan.org/support/epstopdf.zip
 	unzip epstopdf.zip
 	sudo mv epstopdf/epstopdf.pl /usr/bin/epstopdf
+	rm -r epstopdf*
 else
 	echo "[+] Skipping installation of dependencies"
 fi
