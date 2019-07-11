@@ -396,7 +396,7 @@ function check_login(username, password,	cmd, id)
 	if (!match(username, /^[a-zA-Z0-9_-]+$/) || !match(password, /^[^'":]+$/))
 		return _("Wrong characters at username or password")
 
-	if (system(localconf["login_cmd"] " \"" username "\" \"" password)"\"")
+	if (system(localconf["login_cmd"] " " username " " password))
 		return _("Username or password is wrong") "."
 
 	cmd = "basename $(mktemp " localconf["sessions"] "XXXXXXXXXXXXX)"
