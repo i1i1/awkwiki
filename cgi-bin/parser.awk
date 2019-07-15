@@ -380,12 +380,6 @@ function wiki_format_line(fmt,		i, j, pref, suf, strong, em, code, wikilink, fun
 		tag = ""
 		cont = 0
 
-		if (suf ~ /^''''''/) {
-			sub(/^''''''/, "", suf)
-			wikilink = !wikilink
-			fmt = pref suf
-			continue
-		}
 		if (suf ~ /^\*\*/ || suf ~ /^__/) {
 			sub(/^\*\*/, "", suf)
 			sub(/^__/, "", suf)

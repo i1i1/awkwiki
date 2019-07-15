@@ -99,3 +99,6 @@ passwd_path="./awkpasswd"
 ## url rewrite
 rewrite="true"
 
+## registration
+registration="true"
+

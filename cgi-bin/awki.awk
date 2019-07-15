@@ -135,7 +135,7 @@ BEGIN {
 		query["action"] = "login"
 	}
 
-	if (query["register"]) {
+	if (localconf["registration"] == "true" && query["register"]) {
 		result = check_register(query["username"], query["password"], query["password0"])
 		query["action"] = "register"
 	}
@@ -155,7 +155,7 @@ BEGIN {
 		save(query["page"], query["text"], query["string"], query["filename"])
 	else if (query["action"] == "login")
 		result == "ok" ? welcome(query["username"]) : login(result)
-	else if (query["action"] == "register")
+	else if (localconf["registration"] == "true" && query["action"] == "register")
 		register(result)
 	else if (query["action"] == "change_password")
 		change_password(result)
@@ -293,9 +293,13 @@ function header(page,	i, action, label)
       <h2>" _("User actions") "</h2>\n\
       <ul id=\"username\">"
 	if (!auth_access)
-		print "\
+		if (localconf["registration"] == "true")
+			print "\
         <li><a href=\""scriptname"?action=login \" id=\"login\" rel=\"nofollow\">" _("Login") "</a></li>\n\
         <li><a href=\""scriptname"?action=register \" id=\"login\" rel=\"nofollow\">" _("Register") "</a></li>"
+		else
+			print "\
+        <li><a href=\""scriptname"?action=login \" id=\"login\" rel=\"nofollow\">" _("Login") "</a></li>"
 	else
 		print "\
         <li><a href=\""scriptname"?action=change_password \" id=\"login\" rel=\"nofollow\">" _("Change password") "</a></li>\n\

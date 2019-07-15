@@ -10,7 +10,7 @@ done
 
 if awk -F= '/^ID_LIKE=/ {exit($2 == "debian" ? 0 : 1)}' /etc/os-release; then
 	echo "[+] Installing dependencies"
-	sudo apt-get install gawk groff ps2eps pdf2svg python3-pygments unzip
+	sudo apt-get install gawk groff ps2eps pdf2svg python3-pygments unzip rcs
 	cd /tmp
 	wget http://mirrors.ctan.org/support/epstopdf.zip
 	unzip epstopdf.zip
