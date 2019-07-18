@@ -87,7 +87,7 @@ function wiki_blank()
 
 function wiki_reference_category(	cmd, list)
 {
-	cmd = "grep -wl '^[ \t]*\\[/categories\\]:.*" pagename "' " datadir "*"
+	cmd = "grep -wl '^[ \t]*\\[/categories\\]:.*'"esc_sh(pagename)" "datadir"*"
 
 	while (cmd | getline > 0) {
 		if (!list) { list = 1; print "<p><ul>" }
@@ -156,7 +156,7 @@ function wiki_highlight_code(		ex)
 	print tmp > fname
 	close(fname)
 
-	cmd = "./highlight/highlighter.py " fname " " langname
+	cmd = "./highlight/highlighter.py " fname " " esc_sh(langname)
 	while (cmd | getline out)
 		print out
 	close(cmd)

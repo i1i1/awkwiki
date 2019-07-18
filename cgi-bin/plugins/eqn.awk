@@ -8,7 +8,7 @@ function eqn_gen_image(eqn,	cmd, image, alt, align_property)
 	alt = eqn
 	sub(/^[ \t]*/, "", s); sub(/[ \t]*$/, "", s)
 
-	cmd = "nohup ./eqn_render.sh '" eqn "'"
+	cmd = "nohup ./eqn_render.sh "esc_sh(eqn)
 	cmd | getline image
 	cmd | getline align_property
 	close(cmd)

@@ -325,19 +325,19 @@ function footer(page,	cmd, year)
 # send page to parser script
 function parse(name, filename, revision,	parser_cmd)
 {
-	parser_cmd = localconf["parser"] " -v rewrite=\""localconf["rewrite"]"\" -v datadir='" localconf["datadir"] "' -v pagename='" name "' -v contents='" _("Contents") "'"
-	if (system("[ -f "filename" ]") == 0 ) {
+	parser_cmd = localconf["parser"] " -v rewrite=\""localconf["rewrite"]"\" -v datadir='" localconf["datadir"] "' -v pagename="esc_sh(name)" -v contents='" _("Contents") "'"
+	if (system("[ -f "esc_sh(filename)" ]") == 0 ) {
 		if (revision) {
 			print "<em>" _("Displaying old version") " ("revision") " _("of") " <a href=\""scriptname"/" name "\">"name"</a>.</em>"
-			system("co -q -p'"revision"' " filename " | " parser_cmd)
+			system("co -q -p'"revision"' "esc_sh(filename)" | " parser_cmd)
 		} else
-			system("cat " filename " | " parser_cmd)
+			system("cat "esc_sh(filename)" | " parser_cmd)
 	}
 }
 
 function special_diff(page, filename, revision, revision2,   revisions)
 {
-	if (system("[ -f "filename" ]") == 0) {
+	if (system("[ -f "esc_sh(filename)" ]") == 0) {
 		print "<em>" _("Displaying diff between") " " revision
 		if (revision2)
 			print " " _("and") " " revision2
@@ -345,10 +345,10 @@ function special_diff(page, filename, revision, revision2,   revisions)
 			print " " _("and current version")
 		print " " _("of") " <a href=\""scriptname"/"page "\">"page"</a>.</em>"
 		if (revision2)
-			revisions = "-r" revision " -r" revision2
+			revisions = "-r"esc_sh(revision)" -r"esc_sh(revision2)
 		else
-			revisions = "-r" revision
-		system("rcsdiff "revisions" -u "filename" | " localconf["special_parser"] " -v special_diff='"page"'")
+			revisions = "-r"esc_sh(revision)
+		system("rcsdiff "revisions" -u "esc_sh(filename)" | " localconf["special_parser"] " -v special_diff="esc_sh(page))
 	}
 }	
 
@@ -400,7 +400,7 @@ function check_login(username, password,	cmd, id)
 	if (!match(username, /^[a-zA-Z0-9_-]+$/) || !match(password, /^[^'":]+$/))
 		return _("Wrong characters at username or password")
 
-	if (system(localconf["login_cmd"] " " username " " password))
+	if (system(localconf["login_cmd"] " " esc_sh(username) " " esc_sh(password)))
 		return _("Username or password is wrong") "."
 
 	cmd = "basename $(mktemp " localconf["sessions"] "XXXXXXXXXXXXX)"
@@ -476,17 +476,17 @@ function check_register(username, password, password0,	cmd, id, hash)
 	if (!match(username, /^[a-zA-Z0-9_-]+$/) || !match(password, /^[^'":]+$/))
 		return _("Wrong characters at username or password")
 
-	if (system("grep '^" username ":' " localconf["passwd_path"]) == 0)
+	if (system("grep "esc_sh("^"username":")" " localconf["passwd_path"]) == 0)
 		return _("This user already exists") "."
 
 	if (password != password0)
 		return _("Username or password is wrong") "."
 
-	cmd = "echo -n \"" password "\" | sha1sum | cut -d ' ' -f 1"
+	cmd = "echo -n "esc_sh(password)" | sha1sum | cut -d ' ' -f 1"
 	cmd | getline hash
 	close(cmd)
 
-	system("echo " username ":" hash " >> " localconf["passwd_path"])
+	system("echo " esc_sh(username":"hash) " >> " localconf["passwd_path"])
 
 	cmd = "basename $(mktemp " localconf["sessions"] "XXXXXXXXXXXXX)"
 	cmd | getline id
@@ -510,7 +510,7 @@ function check_change_password(password, password0,	cmd, username, hash, file, t
 	if (!match(password, /^[^'":]+$/))
 		return _("Wrong characters at username or password")
 
-	cmd = "echo -n \"" password "\" | sha1sum | cut -d ' ' -f 1"
+	cmd = "echo -n "esc_sh(password)" | sha1sum | cut -d ' ' -f 1"
 	cmd | getline hash
 	close(cmd)
 
@@ -519,7 +519,7 @@ function check_change_password(password, password0,	cmd, username, hash, file, t
 	close(cmd)
 
 	file = ""
-	cmd = "grep -v '^" username "' " localconf["passwd_path"]
+	cmd = "grep -v "esc_sh("^"username)" "localconf["passwd_path"]
 
 	while (cmd | getline tmp > 0)
 		file = file "\n" tmp
@@ -539,11 +539,12 @@ function edit(page, filename, revision,   cmd)
 {
 	if (revision)
 		print "<p><small><em>" _("If you save previous versions, you'll overwrite the current page") ".</em></small>"
+
 	print "<form action=\""scriptname"?action=save&amp;page="page"\" method=\"POST\" accept-charset=\"UTF-8\">"
 	print "<textarea name=\"text\" rows=35 cols=100>"
 	# insert current page into textarea
 	if (revision) {
-		cmd = "co -q -p'"revision"' " filename
+		cmd = "co -q -p"esc_sh(revision)" "esc_sh(filename)
 		while (cmd | getline > 0)
 			print
 		close(cmd)
@@ -575,10 +576,9 @@ function save(page, text, comment, filename,   dtext, date, file, username)
 	if (username == "")
 		username = "anonymous"
 
-
 	if (localconf["rcs"]) {
 		localconf["date_cmd"] | getline date
-		system("ci -q -t-"page" -w"username" -l -m'"ENVIRON["REMOTE_ADDR"] ";;" date ";;"comment"' " filename)
+		system("ci -q -t-"esc_sh(page)" -w"esc_sh(username)" -l -m'"ENVIRON["REMOTE_ADDR"] ";;'"esc_sh(date)"';;'"esc_sh(comment)" " esc_sh(filename))
 		close(localconf["date_cmd"])
 	}
 	print "<a href=\""scriptname"/"page"\">"page"</a> " _("is saved")
@@ -601,13 +601,13 @@ function special_changes(datadir,   date)
 
 function special_search(name, datadir)
 {
-	system("grep -il '"name"' "datadir"* | " localconf["special_parser"] " -v special_search=yes")
+	system("grep -il '"esc_sh(name)"' "datadir"* | " localconf["special_parser"] " -v special_search=yes")
 }
 
 function special_history(name, filename)
 {
 	print "<p>" _("Last changes on") " <a href=\""scriptname"/" name "\">"name"</a><p>"
-	system("rlog " filename " | " localconf["special_parser"] " -v special_history="name)
+	system("rlog "esc_sh(filename)" | " localconf["special_parser"] " -v special_history="esc_sh(name))
 
 	print "<p>" _("Show diff between") ":"
 	print "<form action=\""scriptname"/\" method=\"GET\">"

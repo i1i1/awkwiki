@@ -1,5 +1,27 @@
 #TODO: escape paths
 
+# escape shell
+function esc_sh(s,		arr, n, i, ret)
+{
+	n = split(s, arr, "");
+	ret = ""
+	for (i = 1; i <= n; i++) {
+		switch (arr[i]) {
+		case "\\":
+			arr[i] = "\\\\"
+			break
+		case "$":
+			arr[i] = "\\$"
+			break
+		case "\"":
+			arr[i] = "\\\""
+			break
+		}
+		ret = ret arr[i]
+	}
+	return "\""ret"\""
+}
+
 function arr_get_idx(arr, val,		tmp)
 {
 	for (tmp in arr) {
