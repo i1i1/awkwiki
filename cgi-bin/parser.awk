@@ -380,12 +380,12 @@ function wiki_format_line(fmt,		i, j, pref, suf, strong, em, code, wikilink, fun
 		tag = ""
 		cont = 0
 
-		if (suf ~ /^\*\*/ || suf ~ /^__/) {
+		if (!code && suf ~ /^\*\*/ || suf ~ /^__/) {
 			sub(/^\*\*/, "", suf)
 			sub(/^__/, "", suf)
 			tag = (strong ? "</strong>" : "<strong>")
 			strong = !strong
-		} else if (suf ~ /^[*_]/) {
+		} else if (!code && suf ~ /^[*_]/) {
 			sub(/^[*_]/, "", suf)
 			tag = (em ? "</em>" : "<em>")
 			em = !em
